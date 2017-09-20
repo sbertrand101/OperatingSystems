@@ -1,5 +1,6 @@
 ls
 mkdir apple
 ls
+
 rmdir apple
 ls

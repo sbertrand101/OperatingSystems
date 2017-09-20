@@ -3,18 +3,22 @@
 
 /*
 Problem:
-Write a program that reads in a string of characters from standard input,
-and write them as 80 character lines to standard output. 
-Every newline must be replaced by a space.
-Every double asterisk '**' replaced by a carrot '^'.
+Write a program that imitates a simple linux shell (i.e. a command interpreter)
+that uses fork() and execvp().  The parent process will have to wait for the 
+termination of the child.  The child process must parse the line of input into 
+a set of arguments that will execvp using the filename and remaining arguments. 
 */
 
 /* 
 Solution:
-Read in the input one character at a time, evaluate each character to see 
-whether changes are necessary, then add the character to the 80-character array.
-When the array is filled with 80 characters, print the array with a '\n' appended
-at the end, reset the array's counter to 0, and resume the input read.
+In a while loop, keep accepting stdin, with max string size of 100, until 
+EOF is reached.  When forking, create an if-else statement that dedicates 
+code for the parent (pid > 0), and the child (pid = 0). The parent will 
+wait(NULL) until the child has finished.  The child will parse any 
+'spacing' between the string of words and store them in an array 
+of max size 10.  The child will then call execvp accepting these
+arguments.  Error messages are deployed if something goes wrong when 
+executing fork() or execvp().
 */
 
 #include<stdio.h>
@@ -24,42 +28,47 @@ at the end, reset the array's counter to 0, and resume the input read.
 #include<unistd.h>
 #include<stdlib.h>
 
+#define MAX_INPUT_CHAR 100
+#define MAX_ARGS 10
+
 int main(){
 	while(1){
-		char str[100];
-//		char *parmList[] = {"/bin/ls", "-l", "/Users/sbertrand", NULL};
+		char str[MAX_INPUT_CHAR];
+		pid_t pid;
 
 		printf("%% ");
-		if(fgets(str, 100, stdin) == NULL){break;}
+		if(fgets(str, MAX_INPUT_CHAR, stdin) == NULL){			//Keep accepting stdin until EOF is reached
+			break;}
 		
-	 	if(fork()==0){
+	 	if((pid=fork())==0){									//Child process
 	 		const char delims[] = " \t\r\n\v\f";
 	 		char *word;
-	 		int argc = 0;
-	 		char *argv[10] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+	 		char *argv[MAX_ARGS] = {NULL};
 	 		int i = 0;
-
-	 		printf("What you wrote: %s\n", str);
 				 
 			word =  strtok(str, delims);
 
-			/* walk through other tokens */
-	   		while(word != NULL){ 					//Keep parsing until end of input is reached, ie. pointer = NULL
+	   		while(word != NULL){ 								//Loop: Keep parsing until end of string is reached, ie. pointer = NULL
       			argv[i] = malloc(strlen(word) + 1);
-      			strcpy(argv[i], word);
-      			printf("Printing out argv[%d]: %s\n", argc, argv[i]);
+      			strcpy(argv[i], word);							//Place each parsed argument in argv[i]
       			i++;
-      			argc++;
-	      		word = strtok(NULL, delims);				//Continue parsing initial input
+
+	      		word = strtok(NULL, delims);					
 	   		}
-			if(execvp(argv[0], argv) < 0){
-				printf("ERROR: execvp failed");
+
+			if(execvp(argv[0], argv) < 0){						//If there's no error execvp will replace the below code with new code
+				fprintf(stderr, "%s", "ERROR: Execvp failed. Please enter a file in /bin as your first argument.  Command line argument must be less than 100 characters long.\n");		//execvp failed error message and abort
 				exit(1);
 			}
 	 	}
-	 	else{
-	 		wait(NULL);
-	 		printf("Hello world from parent!\n");
+
+	 	else if(pid < 0){										
+	 		fprintf(stderr, "%s", "ERROR: forking child process failed.\n");	//Forking failed error message and abort
+	 		exit(1);
+	 	}
+
+	 	else{													//Parent process, pid > 0
+	 		wait(NULL);											//Waits until child process executes
 	 	}
  	}
     return 0;
