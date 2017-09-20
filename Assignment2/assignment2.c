@@ -36,11 +36,10 @@ int main(){
 	 		const char delims[] = " \t\r\n\v\f";
 	 		char *word;
 	 		int argc = 0;
-	 		char *argv[10];
+	 		char *argv[10] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 	 		int i = 0;
 
-//	 		printf("Hello world from child!\n");
-	 		printf("What you wrote: %s", str);
+	 		printf("What you wrote: %s\n", str);
 				 
 			word =  strtok(str, delims);
 
@@ -53,12 +52,14 @@ int main(){
       			argc++;
 	      		word = strtok(NULL, delims);				//Continue parsing initial input
 	   		}
-	   		//printf("Printing out argv[%d]: %s\n", argc+1, argv[i+1]);
-			execvp(argv[0], argv);
+			if(execvp(argv[0], argv) < 0){
+				printf("ERROR: execvp failed");
+				exit(1);
+			}
 	 	}
 	 	else{
 	 		wait(NULL);
-//	 		printf("Hello world from parent!\n");
+	 		printf("Hello world from parent!\n");
 	 	}
  	}
     return 0;
